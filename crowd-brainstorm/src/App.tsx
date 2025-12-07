@@ -6,6 +6,7 @@ import { ProtectedRoute } from './components/ProtectedRoute';
 import { AuthProvider } from './context/AuthContext';
 import {LoadingProvider} from './context/LoadingContext';
 import { BusyDialog } from './components/BusyDialog';
+import { MainLayout } from './components/layout/MainLayout';
 
 function App() {
   return (
@@ -22,7 +23,9 @@ function App() {
             path="/dashboard"
             element={
               <ProtectedRoute>
-                <Dashboard />
+                <MainLayout>
+                  <Dashboard />
+                </MainLayout>
               </ProtectedRoute>
             }
           />
