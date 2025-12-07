@@ -1,36 +1,42 @@
-import { useState } from 'react';
+import { useState,useEffect } from 'react';
 import { TextField, Button, Typography, Container, Box } from '@mui/material';
 import { loginUser } from '../services/authService';
 import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
+import {useLoading} from '../../context/LoadingContext'
+import { useAuth } from '../../context/AuthContext';
 
 export const LoginPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const navigate = useNavigate();
+  const { showLoading, hideLoading } = useLoading();
+  const { user } = useAuth();
 
-  /* const handleLogin = async () => {
-    try {
-      await loginUser(email, password);
-      navigate('/dashboard');
-    } catch (error) {
-      alert('Error al iniciar sesión');
-      console.error(error);
-    }
-  }; */
-  const handleLogin = async () => {
-  try {
-    await loginUser(email, password);
+
+useEffect(() => {
+  if (user) {
     navigate('/dashboard');
+  }
+}, [user, navigate]);
+
+const handleLogin = async () => {
+  try {
+    showLoading();
+
+    await loginUser(email, password);
+
   } catch (error) {
     Swal.fire({
       icon: 'error',
-      title: 'Error al iniciar sesión',
+      title: 'Credenciales inválidas',
       text: 'Email o contraseña incorrectos'
     });
-    console.error(error);
+  } finally {
+    hideLoading();
   }
 };
+
 
   return (
     <Container maxWidth="xs">

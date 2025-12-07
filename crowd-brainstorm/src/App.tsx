@@ -4,11 +4,15 @@ import { RegisterPage } from './auth/pages/RegisterPage';
 import {Dashboard} from './pages/Dashboard';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { AuthProvider } from './context/AuthContext';
+import {LoadingProvider} from './context/LoadingContext';
+import { BusyDialog } from './components/BusyDialog';
 
 function App() {
   return (
+    <LoadingProvider>
     <AuthProvider>
       <BrowserRouter>
+      <BusyDialog />
         <Routes>
           <Route path="/" element={<Navigate to="/login" />} />
           <Route path="/login" element={<LoginPage />} />
@@ -25,6 +29,8 @@ function App() {
         </Routes>
       </BrowserRouter>
     </AuthProvider>
+        </LoadingProvider>
+
   );
 }
 
