@@ -42,7 +42,7 @@ export const SessionsListPage = () => {
         ))}
       </Grid>
 
-      <CreateSessionModal open={open} onClose={() => setOpen(false)} onCreated={(id, code) => navigate(`/session/${id}`)} />
+      <CreateSessionModal open={open} onClose={() => setOpen(false)} onCreated={(id:string, code:string) => navigate(`/session/${id}`)} />
     </Box>
   );
 };

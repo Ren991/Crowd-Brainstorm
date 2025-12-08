@@ -1,7 +1,7 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { getSessionById } from '../../services/sessionService';
-import { Typography, Container, Box, Card, CardContent, Button } from '@mui/material';
+import { Typography, Container, Box, Card, CardContent, Button, List, ListItemText, ListItem, Divider } from '@mui/material';
 import { useLoading } from '../../context/LoadingContext';
 
 export const SessionPage = () => {
@@ -44,6 +44,18 @@ export const SessionPage = () => {
           </Box>
         </CardContent>
       </Card>
+
+      <Typography variant="h5" mt={3}>Participantes ({session.participantsCount})</Typography>
+<List>
+  {Object.entries(session.participants || {}).map(([uid, p]: any) => (
+    <Box key={uid}>
+      <ListItem>
+        <ListItemText primary={p.displayName || 'Anónimo'} secondary={`Se unió: ${p.joinedAt?.toDate().toLocaleString()}`} />
+      </ListItem>
+      <Divider />
+    </Box>
+  ))}
+</List>
     </Container>
   );
 };

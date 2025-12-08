@@ -10,6 +10,7 @@ import { MainLayout } from './components/layout/MainLayout';
 import { SessionPage } from './pages/sessions/SessionPage';
 
 function App() {
+  
   return (
     <LoadingProvider>
     <AuthProvider>

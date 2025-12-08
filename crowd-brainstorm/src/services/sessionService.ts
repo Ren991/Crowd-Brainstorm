@@ -23,11 +23,16 @@ export type SessionCreatePayload = {
   isAnonymous?: boolean;
   maxParticipants?: number;
   settings?: Record<string, any>;
+  displayName: string;
 };
 
 const sessionsRef = collection(db, 'sessions');
 
 export const createSession = async (payload: SessionCreatePayload) => {
+  if (!payload.title || !payload.displayName) {
+    throw new Error('El título de la sesión y tu nombre son obligatorios');
+  }
+
   const code = generateCode();
 
   const data = {
@@ -36,13 +41,16 @@ export const createSession = async (payload: SessionCreatePayload) => {
     isActive: true,
     createdAt: serverTimestamp(),
     participantsCount: 1,
-    participants: { [payload.createdBy]: { joinedAt: serverTimestamp() } },
+    participants: {
+      [payload.createdBy]: {
+        joinedAt: serverTimestamp(),
+        displayName: payload.displayName
+      }
+    },
     phase: 'submission',
   };
 
-  // guardarlo con auto id
   const docRef = await addDoc(sessionsRef, data);
-  // retornar id y code
   return { id: docRef.id, code };
 };
 
