@@ -7,6 +7,7 @@ import { AuthProvider } from './context/AuthContext';
 import {LoadingProvider} from './context/LoadingContext';
 import { BusyDialog } from './components/BusyDialog';
 import { MainLayout } from './components/layout/MainLayout';
+import { SessionPage } from './pages/sessions/SessionPage';
 
 function App() {
   return (
@@ -26,6 +27,14 @@ function App() {
                 <MainLayout>
                   <Dashboard />
                 </MainLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/session/:id"
+            element={
+              <ProtectedRoute>
+                <SessionPage />
               </ProtectedRoute>
             }
           />

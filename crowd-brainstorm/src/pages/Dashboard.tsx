@@ -1,5 +1,6 @@
-import { Button, Typography, Container } from '@mui/material';
+import { Button, Typography, Container, Box } from '@mui/material';
 import { logoutUser } from '@/auth/services/authService';
+import { SessionsListPage } from './sessions/SessionsListPage';
 
 export const Dashboard = () => {
   return (
@@ -16,6 +17,11 @@ export const Dashboard = () => {
       >
         Cerrar sesión
       </Button>
+       <Box p={3}>
+      {/* <Typography variant="h4" mb={3}>Bienvenido al Dashboard</Typography> */}
+      {/* Aquí mostramos la lista de sesiones */}
+      <SessionsListPage />
+    </Box>
     </Container>
   );
 };
