@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { getSessionById } from '../../services/sessionService';
 import { Typography, Container, Box, Card, CardContent, Button, List, ListItemText, ListItem, Divider } from '@mui/material';
 import { useLoading } from '../../context/LoadingContext';
+import { IdeasBoard } from './IdeasBoard';
 
 export const SessionPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -56,6 +57,9 @@ export const SessionPage = () => {
     </Box>
   ))}
 </List>
+<Box mt={4}>
+  <IdeasBoard sessionId={id!} />
+</Box>
     </Container>
   );
 };
