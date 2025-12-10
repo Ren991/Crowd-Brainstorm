@@ -8,6 +8,7 @@ import {
   getDocs,
   getDoc,
   updateDoc,
+  deleteDoc,
   onSnapshot,
   serverTimestamp,
   runTransaction
@@ -101,4 +102,9 @@ export const getSessionById = async (id: string) => {
   if (!snap.exists()) return null;
 
   return { id: snap.id, ...snap.data() };
+};
+
+export const deleteSessionById = async (sessionId: string) => {
+  const ref = doc(db, 'sessions', sessionId);
+  await deleteDoc(ref);
 };
