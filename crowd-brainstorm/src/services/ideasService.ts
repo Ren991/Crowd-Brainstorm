@@ -7,7 +7,9 @@ import {
   onSnapshot,
   orderBy,
   query,
-  serverTimestamp
+  serverTimestamp,
+  deleteField,
+  increment
 } from 'firebase/firestore';
 import { db } from '@/app/firebase';
 
@@ -61,4 +63,23 @@ export const deleteIdea = async (
 ) => {
   const ref = doc(db, 'sessions', sessionId, 'ideas', ideaId);
   await deleteDoc(ref);
+};
+
+export const voteIdea = async (ideaId: string, uid: string) => {
+  const ref = doc(db, 'ideas', ideaId);
+
+  await updateDoc(ref, {
+    [`votes.${uid}`]: true,
+    votesCount: increment(1)
+  });
+};
+
+export const unvoteIdea = async (ideaId: string, uid: string) => {
+  const ref = doc(db, 'ideas', ideaId);
+
+  await updateDoc(ref, {
+    [`votes.${uid}`]: deleteField(),
+    votesCount: increment(-1)
+  });
+
 };

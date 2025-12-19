@@ -8,15 +8,21 @@ import {
   serverTimestamp,
   doc,
   updateDoc,
-  deleteDoc
+  deleteDoc,
+  increment,
+  deleteField
 } from 'firebase/firestore';
 import {
   Box,
   Button,
   TextField,
   Typography,
-  Paper
+  Paper,
+  IconButton
 } from '@mui/material';
+import ThumbUpAltIcon from '@mui/icons-material/ThumbUpAlt';
+import ThumbUpOffAltIcon from '@mui/icons-material/ThumbUpOffAlt';
+
 import { db } from '../../app/firebase';
 import { useAuth } from '../../context/AuthContext';
 
@@ -24,7 +30,13 @@ interface Props {
   sessionId: string;
 }
 
-const COLORS = ['#fff9c4', '#c8e6c9', '#bbdefb', '#ffe0b2', '#f8bbd0'];
+const COLORS = [
+  '#fff9c4',
+  '#c8e6c9',
+  '#bbdefb',
+  '#ffe0b2',
+  '#f8bbd0'
+];
 
 export const IdeasBoard = ({ sessionId }: Props) => {
   const { user } = useAuth();
@@ -36,14 +48,17 @@ export const IdeasBoard = ({ sessionId }: Props) => {
 
   const authorName = user?.displayName || user?.email || 'Anónimo';
 
-  // 🔌 Firestore realtime
+  /* ================================
+     REALTIME IDEAS (ordenadas por votos)
+  ================================= */
   useEffect(() => {
     const q = query(
       collection(db, 'sessions', sessionId, 'ideas'),
+      orderBy('votesCount', 'desc'),
       orderBy('createdAt', 'asc')
     );
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
+    const unsub = onSnapshot(q, (snapshot) => {
       const list = snapshot.docs.map((doc) => ({
         id: doc.id,
         ...doc.data()
@@ -51,54 +66,79 @@ export const IdeasBoard = ({ sessionId }: Props) => {
       setIdeas(list);
     });
 
-    return () => unsubscribe();
+    return () => unsub();
   }, [sessionId]);
 
-  // ➕ Crear idea
+  /* ================================
+     CREAR IDEA
+  ================================= */
   const addIdea = async () => {
     if (!text.trim()) return;
-
-    const color = COLORS[Math.floor(Math.random() * COLORS.length)];
 
     await addDoc(collection(db, 'sessions', sessionId, 'ideas'), {
       text,
       author: authorName,
       uid: user?.uid,
-      color,
+      color: COLORS[Math.floor(Math.random() * COLORS.length)],
+      votesCount: 0,
+      votes: {},
       createdAt: serverTimestamp()
     });
 
     setText('');
   };
 
-  // ✏️ Editar
+  /* ================================
+     EDITAR
+  ================================= */
   const startEdit = (idea: any) => {
     setEditingId(idea.id);
     setEditText(idea.text);
   };
 
   const saveEdit = async (id: string) => {
-    const ref = doc(db, 'sessions', sessionId, 'ideas', id);
-    await updateDoc(ref, { text: editText });
+    await updateDoc(
+      doc(db, 'sessions', sessionId, 'ideas', id),
+      { text: editText }
+    );
     setEditingId(null);
     setEditText('');
   };
 
-  // 🗑️ Eliminar
+  /* ================================
+     ELIMINAR
+  ================================= */
   const removeIdea = async (id: string) => {
-    const ref = doc(db, 'sessions', sessionId, 'ideas', id);
-    await deleteDoc(ref);
+    await deleteDoc(
+      doc(db, 'sessions', sessionId, 'ideas', id)
+    );
   };
 
+  /* ================================
+     VOTAR / DESVOTAR
+  ================================= */
+  const toggleVote = async (idea: any) => {
+    if (!user) return;
+
+    const ref = doc(db, 'sessions', sessionId, 'ideas', idea.id);
+    const hasVoted = !!idea.votes?.[user.uid];
+
+    await updateDoc(ref, {
+      [`votes.${user.uid}`]: hasVoted ? deleteField() : true,
+      votesCount: increment(hasVoted ? -1 : 1)
+    });
+  };
+
+  /* ================================
+     UI
+  ================================= */
   return (
     <Box
-      mt={4}
-      mb={4}
-      p={3}
       sx={{
+        width: '100%',
+        minHeight: '100vh',
+        p: 4,
         background: '#deb887',
-        borderRadius: 4,
-        minHeight: '70vh',
         backgroundImage:
           'radial-gradient(#caa472 1px, transparent 1px)',
         backgroundSize: '24px 24px'
@@ -108,123 +148,105 @@ export const IdeasBoard = ({ sessionId }: Props) => {
         🧠 Muro de Ideas
       </Typography>
 
-      {/* 📝 Formulario */}
-      <Box
-        display="flex"
-        gap={2}
-        mb={4}
-        sx={{ maxWidth: 600, mx: 'auto' }}
-      >
+      {/* Formulario */}
+      <Box display="flex" gap={2} mb={4} maxWidth={600} mx="auto">
         <TextField
           fullWidth
           multiline
           minRows={2}
-          placeholder="Escribí una idea brillante..."
+          placeholder="Escribí una idea..."
           value={text}
           onChange={(e) => setText(e.target.value)}
         />
-        <Button
-          variant="contained"
-          color="primary"
-          onClick={addIdea}
-          sx={{ minWidth: 120 }}
-        >
+        <Button variant="contained" onClick={addIdea}>
           Publicar
         </Button>
       </Box>
 
-      {/* 🧩 Post-its */}
-      <Box
-        display="flex"
-        flexWrap="wrap"
-        gap={3}
-        justifyContent="center"
-      >
-        {ideas.map((idea) => (
-          <Paper
-            key={idea.id}
-            elevation={4}
-            sx={{
-              width: 220,
-              minHeight: 160,
-              p: 2,
-              borderRadius: 3,
-              position: 'relative',
-              background: idea.color || '#fff9c4',
-              transform: 'rotate(-1deg)',
-              transition: '0.2s ease',
-              '&:hover': {
-                transform: 'rotate(0deg) scale(1.03)'
-              }
-            }}
-          >
-            {/* ✏️ Acciones */}
-            {idea.uid === user?.uid && (
-              <Box
-                position="absolute"
-                top={6}
-                right={6}
-                display="flex"
-                gap={0.5}
-              >
-                <Button
-                  size="small"
-                  onClick={() => startEdit(idea)}
-                >
-                  ✏️
-                </Button>
-                <Button
-                  size="small"
-                  color="error"
-                  onClick={() => removeIdea(idea.id)}
-                >
-                  🗑️
-                </Button>
-              </Box>
-            )}
+      {/* Post-its */}
+      <Box display="flex" flexWrap="wrap" gap={3} justifyContent="center">
+        {ideas.map((idea) => {
+          const hasVoted = !!idea.votes?.[user?.uid || ''];
 
-            {/* ✍️ Contenido */}
-            {editingId === idea.id ? (
-              <>
-                <TextField
-                  fullWidth
-                  multiline
-                  size="small"
-                  value={editText}
-                  onChange={(e) => setEditText(e.target.value)}
-                />
-                <Button
-                  size="small"
-                  sx={{ mt: 1 }}
-                  onClick={() => saveEdit(idea.id)}
-                >
-                  Guardar
-                </Button>
-              </>
-            ) : (
-              <Typography
-                variant="body1"
-                sx={{ whiteSpace: 'pre-line' }}
-              >
-                {idea.text}
-              </Typography>
-            )}
-
-            {/* 👤 Autor */}
-            <Typography
-              variant="caption"
+          return (
+            <Paper
+              key={idea.id}
+              elevation={4}
               sx={{
-                position: 'absolute',
-                bottom: 8,
-                right: 12,
-                fontStyle: 'italic',
-                opacity: 0.7
+                width: 220,
+                minHeight: 170,
+                p: 2,
+                borderRadius: 3,
+                background: idea.color,
+                position: 'relative',
+                transform: 'rotate(-1deg)'
               }}
             >
-              — {idea.author || 'Anónimo'}
-            </Typography>
-          </Paper>
-        ))}
+              {/* Edit / Delete */}
+              {idea.uid === user?.uid && (
+                <Box position="absolute" top={6} right={6} display="flex">
+                  <Button size="small" onClick={() => startEdit(idea)}>✏️</Button>
+                  <Button size="small" color="error" onClick={() => removeIdea(idea.id)}>🗑️</Button>
+                </Box>
+              )}
+
+              {/* Texto */}
+              {editingId === idea.id ? (
+                <>
+                  <TextField
+                    fullWidth
+                    multiline
+                    size="small"
+                    value={editText}
+                    onChange={(e) => setEditText(e.target.value)}
+                  />
+                  <Button size="small" onClick={() => saveEdit(idea.id)}>
+                    Guardar
+                  </Button>
+                </>
+              ) : (
+                <Typography sx={{ whiteSpace: 'pre-line' }}>
+                  {idea.text}
+                </Typography>
+              )}
+
+              {/* Votos */}
+              <Box
+                display="flex"
+                alignItems="center"
+                gap={1}
+                position="absolute"
+                bottom={8}
+                left={8}
+              >
+                <IconButton
+                  size="small"
+                  onClick={() => toggleVote(idea)}
+                  color={hasVoted ? 'primary' : 'default'}
+                >
+                  {hasVoted ? <ThumbUpAltIcon /> : <ThumbUpOffAltIcon />}
+                </IconButton>
+                <Typography fontWeight="bold">
+                  {idea.votesCount || 0}
+                </Typography>
+              </Box>
+
+              {/* Autor */}
+              <Typography
+                variant="caption"
+                sx={{
+                  position: 'absolute',
+                  bottom: 8,
+                  right: 12,
+                  opacity: 0.7,
+                  fontStyle: 'italic'
+                }}
+              >
+                — {idea.author}
+              </Typography>
+            </Paper>
+          );
+        })}
       </Box>
     </Box>
   );
