@@ -49,6 +49,8 @@ export const IdeasBoard = ({ sessionId, currentPhase }: Props) => {
 
   const canWrite = currentPhase === "IDEAS";
 const canVote = currentPhase === "VOTING";
+const isResults = currentPhase === "RESULTS";
+
 
   const authorName = user?.displayName || user?.email || 'Anónimo';
 
@@ -190,8 +192,8 @@ const canVote = currentPhase === "VOTING";
               {/* Edit / Delete */}
               {idea.uid === user?.uid && (
                 <Box position="absolute" top={6} right={6} display="flex">
-                  <Button size="small" onClick={() => startEdit(idea)}>✏️</Button>
-                  <Button size="small" color="error" onClick={() => removeIdea(idea.id)}>🗑️</Button>
+                  <Button size="small" onClick={() => startEdit(idea)}  disabled={!canWrite}>✏️</Button>
+                  <Button size="small" color="error" onClick={() => removeIdea(idea.id)}  disabled={!canWrite}>🗑️</Button>
                 </Box>
               )}
 
@@ -228,6 +230,7 @@ const canVote = currentPhase === "VOTING";
                   size="small"
                   onClick={() => toggleVote(idea)}
                   color={hasVoted ? 'primary' : 'default'}
+                  disabled={!canVote}
                 >
                   {hasVoted ? <ThumbUpAltIcon /> : <ThumbUpOffAltIcon />}
                 </IconButton>
@@ -253,6 +256,23 @@ const canVote = currentPhase === "VOTING";
           );
         })}
       </Box>
+      {isResults && ideas.length > 0 && (
+  <Box mb={4} textAlign="center">
+    <Typography variant="h5" mb={2}>
+      🏆 Top Ideas
+    </Typography>
+
+    {ideas.slice(0, 3).map((idea, i) => (
+      <Typography key={idea.id} fontSize={18}>
+        {i === 0 && "🥇"}
+        {i === 1 && "🥈"}
+        {i === 2 && "🥉"}
+        {" "}
+        {idea.text} — <b>{idea.votesCount}</b> votos
+      </Typography>
+    ))}
+  </Box>
+)}
     </Box>
   );
 };
