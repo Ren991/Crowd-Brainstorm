@@ -1,29 +1,30 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
-import { getSessionById } from "../../services/sessionService";
-import {
-  Typography,
-  Container,
-  Box,
-  Card,
-  CardContent,
-  Button,
-  Chip,
-  Stack,
-} from "@mui/material";
-import { useLoading } from "../../context/LoadingContext";
-import { IdeasBoard } from "./IdeasBoard";
-import { deleteSessionById } from "../../services/sessionService";
+import { Container, Box, Typography } from "@mui/material";
 import Swal from "sweetalert2";
+
+import { getSessionById, deleteSessionById, listenSessionById } from "../../services/sessionService";
+import { useLoading } from "../../context/LoadingContext";
 import { useAuth } from "../../context/AuthContext";
+
+import { SessionHeader } from "./SessionHeader";
+import { SessionControls } from "./SessionControls";
+import { IdeasBoard } from "./IdeasBoard";
+import { useSessionTimer } from "@/hooks/useSessionTimer";
 
 export const SessionPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+
   const { showLoading, hideLoading } = useLoading();
-  const [session, setSession] = useState<any>(null);
   const { user } = useAuth();
 
+  const [session, setSession] = useState<any>(null);
+
+  // 🔹 Timer global (todos ven el mismo)
+  const { remainingSeconds } = useSessionTimer(session);
+
+  // 🔴 Eliminar sesión (solo creador)
   const handleDeleteSession = async () => {
     const result = await Swal.fire({
       title: "¿Eliminar sesión?",
@@ -31,7 +32,6 @@ export const SessionPage = () => {
       icon: "warning",
       showCancelButton: true,
       confirmButtonColor: "#d33",
-      cancelButtonColor: "#3085d6",
       confirmButtonText: "Sí, eliminar",
       cancelButtonText: "Cancelar",
     });
@@ -42,16 +42,22 @@ export const SessionPage = () => {
       showLoading();
       await deleteSessionById(id!);
 
-      Swal.fire("Eliminada", "La sesión fue eliminada", "success");
+      await Swal.fire(
+        "Eliminada",
+        "La sesión fue eliminada correctamente",
+        "success"
+      );
+
       navigate("/dashboard");
-    } catch (e) {
+    } catch {
       Swal.fire("Error", "No se pudo eliminar la sesión", "error");
     } finally {
       hideLoading();
     }
   };
 
-  useEffect(() => {
+  // 🔄 Cargar sesión
+/*   useEffect(() => {
     if (!id) return;
 
     const loadSession = async () => {
@@ -65,7 +71,19 @@ export const SessionPage = () => {
     };
 
     loadSession();
-  }, [id]);
+  }, [id]); */
+  useEffect(() => {
+  if (!id) return;
+
+  showLoading();
+
+  const unsub = listenSessionById(id, (s) => {
+    setSession(s);
+    hideLoading();
+  });
+
+  return () => unsub();
+}, [id]);
 
   if (!session) {
     return (
@@ -74,6 +92,8 @@ export const SessionPage = () => {
       </Typography>
     );
   }
+
+  const isCreator = user?.uid === session.createdBy;
 
   return (
     <Container
@@ -85,69 +105,34 @@ export const SessionPage = () => {
         pt: 2,
       }}
     >
-      {/* Header compacto */}
-      <Card sx={{ mb: 2 }}>
-        <CardContent
-          sx={{
-            py: 1.5,
-            "&:last-child": { pb: 1.5 },
-          }}
-        >
-          <Box
-            display="flex"
-            justifyContent="space-between"
-            alignItems="center"
-            flexWrap="wrap"
-            gap={1}
-          >
-            {/* Título pequeño */}
-            <Box>
-              <Typography variant="h6">{session.title}</Typography>
-              {session.description && (
-                <Typography variant="caption" color="text.secondary">
-                  {session.description}
-                </Typography>
-              )}
-            </Box>
+      {/* 🧠 HEADER (acá se VE el cronómetro) */}
+      <SessionHeader
+        timeLeft={remainingSeconds}
+        isCreator={isCreator}
+        onBack={() => navigate("/dashboard")}
+        onDelete={handleDeleteSession}
+      />
 
-            {/* Participantes + botón */}
-            <Stack direction="row" spacing={1} alignItems="center">
-              <Chip
-                size="small"
-                label={`${session.participantsCount} participantes`}
-                variant="outlined"
-              />
-              <Button
-                size="small"
-                variant="outlined"
-                onClick={() => navigate("/dashboard")}
-              >
-                Volver
-              </Button>
+      {/* 🎛 CONTROLES DE FASE (solo creador) */}
+      {isCreator && (
+        <SessionControls
+          sessionId={id!}
+          currentPhase={session.phase}
+        />
+      )}
 
-              {user?.uid === session.createdBy && (
-                <Button
-                  size="small"
-                  color="error"
-                  variant="contained"
-                  onClick={handleDeleteSession}
-                >
-                  Eliminar sesión
-                </Button>
-              )}
-            </Stack>
-          </Box>
-        </CardContent>
-      </Card>
-
-      {/* IdeasBoard - ocupa todo el resto */}
+      {/* 🧩 TABLERO DE IDEAS */}
       <Box
         sx={{
           flex: 1,
           minHeight: 0,
+          mt: 2,
         }}
       >
-        <IdeasBoard sessionId={id!} />
+        <IdeasBoard
+          sessionId={id!}
+          currentPhase={session.phase}
+        />
       </Box>
     </Container>
   );

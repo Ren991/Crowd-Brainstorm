@@ -108,3 +108,37 @@ export const deleteSessionById = async (sessionId: string) => {
   const ref = doc(db, 'sessions', sessionId);
   await deleteDoc(ref);
 };
+
+export const updateSessionPhase = async (
+  sessionId: string,
+  phase: "IDEAS" | "VOTING" | "RESULTS",
+  durationSeconds?: number
+) => {
+  const ref = doc(db, "sessions", sessionId);
+
+  if (phase === "RESULTS") {
+    await updateDoc(ref, { phase });
+    return;
+  }
+
+  await updateDoc(ref, {
+    phase,
+    timer: {
+      startAt: serverTimestamp(),
+      duration: durationSeconds ?? 0
+    }
+  });
+};
+
+
+export const listenSessionById = (
+  sessionId: string,
+  onUpdate: (session: any) => void
+) => {
+  const ref = doc(db, "sessions", sessionId);
+
+  return onSnapshot(ref, (snap) => {
+    if (!snap.exists()) return;
+    onUpdate({ id: snap.id, ...snap.data() });
+  });
+};

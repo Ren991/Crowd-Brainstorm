@@ -26,8 +26,9 @@ import ThumbUpOffAltIcon from '@mui/icons-material/ThumbUpOffAlt';
 import { db } from '../../app/firebase';
 import { useAuth } from '../../context/AuthContext';
 
-interface Props {
+type Props = {
   sessionId: string;
+  currentPhase: "IDEAS" | "VOTING" | "RESULTS";
 }
 
 const COLORS = [
@@ -38,13 +39,16 @@ const COLORS = [
   '#f8bbd0'
 ];
 
-export const IdeasBoard = ({ sessionId }: Props) => {
+export const IdeasBoard = ({ sessionId, currentPhase }: Props) => {
   const { user } = useAuth();
 
   const [ideas, setIdeas] = useState<any[]>([]);
   const [text, setText] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editText, setEditText] = useState('');
+
+  const canWrite = currentPhase === "IDEAS";
+const canVote = currentPhase === "VOTING";
 
   const authorName = user?.displayName || user?.email || 'Anónimo';
 
@@ -156,9 +160,10 @@ export const IdeasBoard = ({ sessionId }: Props) => {
           minRows={2}
           placeholder="Escribí una idea..."
           value={text}
+          disabled={!canWrite}
           onChange={(e) => setText(e.target.value)}
         />
-        <Button variant="contained" onClick={addIdea}>
+        <Button variant="contained" onClick={addIdea} disabled={!canWrite}>
           Publicar
         </Button>
       </Box>
