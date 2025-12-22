@@ -11,6 +11,8 @@ import { SessionHeader } from "./SessionHeader";
 import { SessionControls } from "./SessionControls";
 import { IdeasBoard } from "./IdeasBoard";
 import { useSessionTimer } from "@/hooks/useSessionTimer";
+import { doc, onSnapshot } from "firebase/firestore";
+import { db } from "@/app/firebase";
 
 export const SessionPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -20,11 +22,64 @@ export const SessionPage = () => {
   const { user } = useAuth();
 
   const [session, setSession] = useState<any>(null);
+  const [workflow, setWorkflow] = useState<any>(null);
 
-  // 🔹 Timer global (todos ven el mismo)
+  // 🔹 Timer global
   const { remainingSeconds } = useSessionTimer(session);
 
-  // 🔴 Eliminar sesión (solo creador)
+  // 🔄 Escuchar sesión
+  useEffect(() => {
+    if (!id) return;
+
+    showLoading();
+
+    const unsub = listenSessionById(id, (s) => {
+      setSession(s);
+      hideLoading();
+    });
+
+    return () => unsub();
+  }, [id]);
+
+  // 🔄 Escuchar workflow activo
+ /*  useEffect(() => {
+    if (!session?.activeWorkflowId) return;
+
+    const ref = doc(
+      db,
+      "sessions",
+      session.id,
+      "workflows",
+      session.activeWorkflowId
+    );
+
+    return onSnapshot(ref, (snap) => {
+      if (!snap.exists()) return;
+      setWorkflow({ id: snap.id, ...snap.data() });
+    });
+  }, [session?.activeWorkflowId]); */
+  useEffect(() => {
+    console.log("useEffect workflow activo",session)
+  if (!session?.id || !session?.activeWorkflowId) return;
+
+  const ref = doc(
+    db,
+    "sessions",
+    session.id,
+    "workflows",
+    session.activeWorkflowId
+  );
+console.log(ref)
+  const unsub = onSnapshot(ref, (snap) => {
+    if (!snap.exists()) return;
+    setWorkflow({ id: snap.id, ...snap.data() });
+  });
+
+  return () => unsub();
+}, [session?.id, session?.activeWorkflowId]);
+
+
+  // 🔴 Eliminar sesión
   const handleDeleteSession = async () => {
     const result = await Swal.fire({
       title: "¿Eliminar sesión?",
@@ -42,8 +97,7 @@ export const SessionPage = () => {
 
     try {
       await deleteSessionById(id!);
-
-      hideLoading(); // 👈 CLAVE: antes de navegar
+      hideLoading();
 
       await Swal.fire(
         "Eliminada",
@@ -58,22 +112,8 @@ export const SessionPage = () => {
     }
   };
 
-
-  // 🔄 Cargar sesión
-  useEffect(() => {
-    if (!id) return;
-
-    showLoading();
-
-    const unsub = listenSessionById(id, (s) => {
-      setSession(s);
-      hideLoading();
-    });
-
-    return () => unsub();
-  }, [id]);
-
-  if (!session) {
+  // ⏳ Loading
+  if (!session || !workflow) {
     return (
       <Typography sx={{ mt: 5, textAlign: "center" }}>
         Cargando sesión...
@@ -93,7 +133,6 @@ export const SessionPage = () => {
         pt: 2,
       }}
     >
-      {/* 🧠 HEADER (acá se VE el cronómetro) */}
       <SessionHeader
         timeLeft={remainingSeconds}
         isCreator={isCreator}
@@ -102,7 +141,6 @@ export const SessionPage = () => {
         currentPhase={session.phase}
       />
 
-      {/* 🎛 CONTROLES DE FASE (solo creador) */}
       {isCreator && (
         <SessionControls
           sessionId={id!}
@@ -111,16 +149,10 @@ export const SessionPage = () => {
         />
       )}
 
-      {/* 🧩 TABLERO DE IDEAS */}
-      <Box
-        sx={{
-          flex: 1,
-          minHeight: 0,
-          mt: 2,
-        }}
-      >
+      <Box sx={{ flex: 1, minHeight: 0, mt: 2 }}>
         <IdeasBoard
           sessionId={id!}
+          workflowId={workflow.id}
           currentPhase={session.phase}
         />
       </Box>

@@ -11,6 +11,8 @@ import {
   ToggleButton
 } from "@mui/material";
 import { updateSessionPhase } from "../../services/sessionService";
+import { createNewWorkflow } from "@/services/workflowService";
+import Swal from "sweetalert2";
 
 type Phase = "IDEAS" | "VOTING" | "RESULTS";
 
@@ -30,6 +32,23 @@ const canStartIdeas = participantsCount >= 3;
     await updateSessionPhase(sessionId, "IDEAS", minutes * 60);
     setOpen(false);
   };
+
+  /* const handleCreateNewDashboard = async () => {
+  await createNewWorkflow(sessionId, "Nuevo Brainstorm");
+}; */
+const handleNewDashboard = async () => {
+  const { value: title } = await Swal.fire({
+    title: "Nuevo dashboard",
+    input: "text",
+    inputLabel: "Título del dashboard",
+    inputPlaceholder: "Ej: Qué mejorar",
+    showCancelButton: true,
+  });
+
+  if (!title) return;
+
+  await createNewWorkflow(sessionId, title);
+};
 
   return (
     <>
@@ -66,6 +85,17 @@ const canStartIdeas = participantsCount >= 3;
         >
           Resultados
         </Button>
+
+        {currentPhase === "RESULTS" && (
+          <Button
+            variant="contained"
+            color="success"
+            onClick={handleNewDashboard}
+          >
+            ➕ Agregar nuevo dashboard
+          </Button>
+        )}
+
       </Stack>
 
       {/* MODAL */}

@@ -34,7 +34,7 @@ export const SessionHeader = ({
         color={timeLeft <= 10 ? "error" : "primary"}
         label={`⏱️ ${minutes}:${seconds.toString().padStart(2, "0")}`}
       /> */}
-      {showTimer && (
+      {currentPhase !== "RESULTS"  && (
   <Chip
     color={timeLeft <= 10 ? "error" : "primary"}
     label={`⏱️ ${minutes}:${seconds.toString().padStart(2, "0")}`}

@@ -28,6 +28,7 @@ import { useAuth } from '../../context/AuthContext';
 
 type Props = {
   sessionId: string;
+  workflowId: string;
   currentPhase: "IDEAS" | "VOTING" | "RESULTS";
 }
 
@@ -39,7 +40,7 @@ const COLORS = [
   '#f8bbd0'
 ];
 
-export const IdeasBoard = ({ sessionId, currentPhase }: Props) => {
+export const IdeasBoard = ({ sessionId, workflowId, currentPhase }: Props) => {
   const { user } = useAuth();
 
   const [ideas, setIdeas] = useState<any[]>([]);
@@ -51,45 +52,57 @@ export const IdeasBoard = ({ sessionId, currentPhase }: Props) => {
   const canVote = currentPhase === "VOTING";
   const isResults = currentPhase === "RESULTS";
 
-
   const authorName = user?.displayName || user?.email || 'Anónimo';
 
   /* ================================
-     REALTIME IDEAS (ordenadas por votos)
+     REALTIME IDEAS
   ================================= */
   useEffect(() => {
+    if (!workflowId) return;
+
     const q = query(
-      collection(db, 'sessions', sessionId, 'ideas'),
-      orderBy('votesCount', 'desc'),
-      orderBy('createdAt', 'asc')
+      collection(
+        db,
+        "sessions",
+        sessionId,
+        "workflows",
+        workflowId,
+        "ideas"
+      ),
+      orderBy("votesCount", "desc"),
+      orderBy("createdAt", "asc")
     );
 
-    const unsub = onSnapshot(q, (snapshot) => {
-      const list = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-      setIdeas(list);
+    const unsub = onSnapshot(q, snapshot => {
+      setIdeas(
+        snapshot.docs.map(d => ({
+          id: d.id,
+          ...d.data()
+        }))
+      );
     });
 
     return () => unsub();
-  }, [sessionId]);
+  }, [sessionId, workflowId]);
 
   /* ================================
      CREAR IDEA
   ================================= */
   const addIdea = async () => {
-    if (!text.trim()) return;
+    if (!text.trim() || !user) return;
 
-    await addDoc(collection(db, 'sessions', sessionId, 'ideas'), {
-      text,
-      author: authorName,
-      uid: user?.uid,
-      color: COLORS[Math.floor(Math.random() * COLORS.length)],
-      votesCount: 0,
-      votes: {},
-      createdAt: serverTimestamp()
-    });
+    await addDoc(
+      collection(db, "sessions", sessionId, "workflows", workflowId, "ideas"),
+      {
+        text,
+        author: authorName,
+        uid: user.uid,
+        color: COLORS[Math.floor(Math.random() * COLORS.length)],
+        votes: {},
+        votesCount: 0,
+        createdAt: serverTimestamp()
+      }
+    );
 
     setText('');
   };
@@ -97,26 +110,25 @@ export const IdeasBoard = ({ sessionId, currentPhase }: Props) => {
   /* ================================
      EDITAR
   ================================= */
-  const startEdit = (idea: any) => {
-    setEditingId(idea.id);
-    setEditText(idea.text);
-  };
-
   const saveEdit = async (id: string) => {
     await updateDoc(
-      doc(db, 'sessions', sessionId, 'ideas', id),
+      doc(db, "sessions", sessionId, "workflows", workflowId, "ideas", id),
       { text: editText }
     );
+
     setEditingId(null);
     setEditText('');
   };
-
+const startEdit = (idea: any) => {
+  setEditingId(idea.id);
+  setEditText(idea.text);
+};
   /* ================================
      ELIMINAR
   ================================= */
   const removeIdea = async (id: string) => {
     await deleteDoc(
-      doc(db, 'sessions', sessionId, 'ideas', id)
+      doc(db, "sessions", sessionId, "workflows", workflowId, "ideas", id)
     );
   };
 
@@ -126,13 +138,15 @@ export const IdeasBoard = ({ sessionId, currentPhase }: Props) => {
   const toggleVote = async (idea: any) => {
     if (!user) return;
 
-    const ref = doc(db, 'sessions', sessionId, 'ideas', idea.id);
     const hasVoted = !!idea.votes?.[user.uid];
 
-    await updateDoc(ref, {
-      [`votes.${user.uid}`]: hasVoted ? deleteField() : true,
-      votesCount: increment(hasVoted ? -1 : 1)
-    });
+    await updateDoc(
+      doc(db, "sessions", sessionId, "workflows", workflowId, "ideas", idea.id),
+      {
+        [`votes.${user.uid}`]: hasVoted ? deleteField() : true,
+        votesCount: increment(hasVoted ? -1 : 1)
+      }
+    );
   };
 
   /* ================================
@@ -274,7 +288,7 @@ export const IdeasBoard = ({ sessionId, currentPhase }: Props) => {
           );
         })}
       </Box>
-      
+
     </Box>
   );
 };

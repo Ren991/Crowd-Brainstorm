@@ -27,33 +27,111 @@ export type SessionCreatePayload = {
   displayName: string;
 };
 
+type CreateSessionInput = {
+  title: string;
+  description?: string;
+  createdBy: string;
+  createdByEmail: string;
+  displayName: string;
+  isAnonymous: boolean;
+  maxParticipants: number;
+};
+
 const sessionsRef = collection(db, 'sessions');
 
-export const createSession = async (payload: SessionCreatePayload) => {
-  if (!payload.title || !payload.displayName) {
-    throw new Error('El título de la sesión y tu nombre son obligatorios');
-  }
+export type CreateSessionResult = {
+  id: string;
+  code: string;
+};
 
-  const code = generateCode();
+export const createSession = async (
+  data: CreateSessionInput
+): Promise<CreateSessionResult> => {
+  // 🔐 Código corto para ingresar a la sesión
+  const code = Math.random()
+    .toString(36)
+    .substring(2, 6)
+    .toUpperCase();
 
-  const data = {
-    ...payload,
+  // 1️⃣ Crear sesión
+  const sessionRef = await addDoc(collection(db, "sessions"), {
+    title: data.title,
+    description: data.description || "",
+    createdBy: data.createdBy,
+    createdByEmail: data.createdByEmail,
+    isAnonymous: data.isAnonymous,
+    maxParticipants: data.maxParticipants,
     code,
+
+    phase: "submission",
     isActive: true,
-    createdAt: serverTimestamp(),
-    participantsCount: 1,
+
     participants: {
-      [payload.createdBy]: {
-        joinedAt: serverTimestamp(),
-        displayName: payload.displayName
+      [data.createdBy]: {
+        displayName: data.displayName,
+        joinedAt: serverTimestamp()
       }
     },
-    phase: 'submission',
-  };
+    participantsCount: 1,
 
-  const docRef = await addDoc(sessionsRef, data);
-  return { id: docRef.id, code };
+    createdAt: serverTimestamp()
+  });
+
+  // 2️⃣ Crear workflow inicial
+  const workflowRef = await addDoc(
+    collection(db, "sessions", sessionRef.id, "workflows"),
+    {
+      title: data.description || data.title, // 👈 primer workflow usa la descripción/título
+      phase: "submission",
+      index: 1,
+      createdAt: serverTimestamp()
+    }
+  );
+
+  // 3️⃣ Setear workflow activo
+  await updateDoc(doc(db, "sessions", sessionRef.id), {
+    activeWorkflowId: workflowRef.id
+  });
+
+  return {
+    id: sessionRef.id,
+    code
+  };
 };
+/* export const createSession = async (data: {
+  title: string;
+  description: string;
+  createdBy: string;
+  createdByEmail: string;
+  displayName: string;
+  isAnonymous: boolean;
+  maxParticipants: number;
+}) : Promise<{ id: string; code: string }> => {
+  const sessionRef = await addDoc(collection(db, "sessions"), {
+    ...data,
+    createdAt: serverTimestamp(),
+    participantsCount: 1,
+    phase: "submission",
+  });
+
+  // 👇 Workflow inicial
+  const workflowRef = await addDoc(
+    collection(db, "sessions", sessionRef.id, "workflows"),
+    {
+      title: data.description, // 👈 acá está la clave
+      phase: "submission",
+      createdAt: serverTimestamp(),
+    }
+  );
+
+  // 👇 setear activo
+  await updateDoc(sessionRef, {
+    activeWorkflowId: workflowRef.id,
+  });
+
+  return { id: sessionRef.id };
+};
+ */
 
 export const getSessionByCode = async (code: string) => {
   const q = query(sessionsRef, where('code', '==', code));
@@ -141,4 +219,25 @@ export const listenSessionById = (
     if (!snap.exists()) return;
     onUpdate({ id: snap.id, ...snap.data() });
   });
+};
+export const createWorkflow = async (sessionId: string) => {
+  const workflowsRef = collection(
+    db,
+    "sessions",
+    sessionId,
+    "workflows"
+  );
+
+  const workflowDoc = await addDoc(workflowsRef, {
+    phase: "IDEAS",
+    createdAt: serverTimestamp(),
+    timer: null
+  });
+
+  // activar este workflow
+  await updateDoc(doc(db, "sessions", sessionId), {
+    activeWorkflowId: workflowDoc.id
+  });
+
+  return workflowDoc.id;
 };
