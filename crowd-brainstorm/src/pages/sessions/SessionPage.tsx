@@ -38,9 +38,12 @@ export const SessionPage = () => {
 
     if (!result.isConfirmed) return;
 
+    showLoading();
+
     try {
-      showLoading();
       await deleteSessionById(id!);
+
+      hideLoading(); // 👈 CLAVE: antes de navegar
 
       await Swal.fire(
         "Eliminada",
@@ -50,40 +53,25 @@ export const SessionPage = () => {
 
       navigate("/dashboard");
     } catch {
-      Swal.fire("Error", "No se pudo eliminar la sesión", "error");
-    } finally {
       hideLoading();
+      Swal.fire("Error", "No se pudo eliminar la sesión", "error");
     }
   };
 
+
   // 🔄 Cargar sesión
-/*   useEffect(() => {
+  useEffect(() => {
     if (!id) return;
 
-    const loadSession = async () => {
-      try {
-        showLoading();
-        const s = await getSessionById(id);
-        setSession(s);
-      } finally {
-        hideLoading();
-      }
-    };
+    showLoading();
 
-    loadSession();
-  }, [id]); */
-  useEffect(() => {
-  if (!id) return;
+    const unsub = listenSessionById(id, (s) => {
+      setSession(s);
+      hideLoading();
+    });
 
-  showLoading();
-
-  const unsub = listenSessionById(id, (s) => {
-    setSession(s);
-    hideLoading();
-  });
-
-  return () => unsub();
-}, [id]);
+    return () => unsub();
+  }, [id]);
 
   if (!session) {
     return (

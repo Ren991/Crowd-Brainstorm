@@ -35,17 +35,17 @@ const canStartIdeas = participantsCount >= 3;
     <>
       <Stack direction="row" spacing={1} alignItems="center">
         <Chip label={`Fase: ${currentPhase}`} />
-        {/* {participantsCount < 3 && (
+        {participantsCount < 3 && (
           <Chip
             color="warning"
             label="Se requieren al menos 3 participantes"
             size="small"
           />
-        )} */}
+        )}
         <Button
           size="small"
           variant="contained"
-          disabled={ currentPhase === "IDEAS"}
+          disabled={!canStartIdeas || currentPhase === "IDEAS" || currentPhase === "VOTING" || currentPhase === "RESULTS"}
           onClick={() => setOpen(true)}
         >
           Envío de ideas
@@ -53,7 +53,7 @@ const canStartIdeas = participantsCount >= 3;
 
         <Button
           size="small"
-          disabled={currentPhase === "VOTING"}
+          disabled={currentPhase === "VOTING" || currentPhase === "RESULTS"}
           onClick={() => updateSessionPhase(sessionId, "VOTING", 180)}
         >
           Votación
