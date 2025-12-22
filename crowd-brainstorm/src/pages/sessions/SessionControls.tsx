@@ -17,11 +17,14 @@ type Phase = "IDEAS" | "VOTING" | "RESULTS";
 type Props = {
   sessionId: string;
   currentPhase: Phase;
+  participantsCount: number;
 };
 
-export const SessionControls = ({ sessionId, currentPhase }: Props) => {
+
+export const SessionControls = ({ sessionId, currentPhase, participantsCount }: Props) => {
   const [open, setOpen] = useState(false);
   const [minutes, setMinutes] = useState(5);
+const canStartIdeas = participantsCount >= 3;
 
   const startIdeasPhase = async () => {
     await updateSessionPhase(sessionId, "IDEAS", minutes * 60);
@@ -32,11 +35,17 @@ export const SessionControls = ({ sessionId, currentPhase }: Props) => {
     <>
       <Stack direction="row" spacing={1} alignItems="center">
         <Chip label={`Fase: ${currentPhase}`} />
-
+        {/* {participantsCount < 3 && (
+          <Chip
+            color="warning"
+            label="Se requieren al menos 3 participantes"
+            size="small"
+          />
+        )} */}
         <Button
           size="small"
           variant="contained"
-          disabled={currentPhase === "IDEAS"}
+          disabled={ currentPhase === "IDEAS"}
           onClick={() => setOpen(true)}
         >
           Envío de ideas

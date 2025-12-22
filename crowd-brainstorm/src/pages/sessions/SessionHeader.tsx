@@ -1,9 +1,11 @@
 import { Box, Typography, Button, Stack, Chip } from "@mui/material";
 
 type Props = {
-  timeLeft: number;               // 👈 AGREGAR
+  timeLeft: number;               
   isCreator: boolean;
   onBack: () => void;
+  currentPhase: "IDEAS" | "VOTING" | "RESULTS";
+  
   onDelete: () => void | Promise<void>;
 };
 
@@ -12,9 +14,11 @@ export const SessionHeader = ({
   isCreator,
   onBack,
   onDelete,
+  currentPhase,
 }: Props) => {
   const minutes = Math.floor(timeLeft / 60);
   const seconds = timeLeft % 60;
+  const showTimer =  currentPhase === "IDEAS" || currentPhase === "VOTING";
 
   return (
     <Box
@@ -24,14 +28,18 @@ export const SessionHeader = ({
       mb={2}
     >
       {/* ⏱️ Cronómetro */}
-    {/*   <Chip
-        label={`⏱️ ${minutes}:${seconds.toString().padStart(2, "0")}`}
+    
+
+      {/* <Chip
         color={timeLeft <= 10 ? "error" : "primary"}
+        label={`⏱️ ${minutes}:${seconds.toString().padStart(2, "0")}`}
       /> */}
-      <Chip
-        color={timeLeft <= 10 ? "error" : "primary"}
-        label={`⏱️ ${minutes}:${seconds.toString().padStart(2, "0")}`}
-      />
+      {showTimer && (
+  <Chip
+    color={timeLeft <= 10 ? "error" : "primary"}
+    label={`⏱️ ${minutes}:${seconds.toString().padStart(2, "0")}`}
+  />
+)}
 
       {/* Acciones */}
       <Stack direction="row" spacing={1}>

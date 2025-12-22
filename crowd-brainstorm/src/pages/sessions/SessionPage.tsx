@@ -111,6 +111,7 @@ export const SessionPage = () => {
         isCreator={isCreator}
         onBack={() => navigate("/dashboard")}
         onDelete={handleDeleteSession}
+        currentPhase={session.phase}
       />
 
       {/* 🎛 CONTROLES DE FASE (solo creador) */}
@@ -118,6 +119,7 @@ export const SessionPage = () => {
         <SessionControls
           sessionId={id!}
           currentPhase={session.phase}
+          participantsCount={session.participantsCount}
         />
       )}
 
