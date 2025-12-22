@@ -48,8 +48,8 @@ export const IdeasBoard = ({ sessionId, currentPhase }: Props) => {
   const [editText, setEditText] = useState('');
 
   const canWrite = currentPhase === "IDEAS";
-const canVote = currentPhase === "VOTING";
-const isResults = currentPhase === "RESULTS";
+  const canVote = currentPhase === "VOTING";
+  const isResults = currentPhase === "RESULTS";
 
 
   const authorName = user?.displayName || user?.email || 'Anónimo';
@@ -154,6 +154,24 @@ const isResults = currentPhase === "RESULTS";
         🧠 Muro de Ideas
       </Typography>
 
+      {isResults && ideas.length > 0 && (
+        <Box mb={4} textAlign="center">
+          <Typography variant="h5" mb={2}>
+            🏆 Top Ideas
+          </Typography>
+
+          {ideas.slice(0, 3).map((idea, i) => (
+            <Typography key={idea.id} fontSize={18}>
+              {i === 0 && "🥇"}
+              {i === 1 && "🥈"}
+              {i === 2 && "🥉"}
+              {" "}
+              {idea.text} — <b>{idea.votesCount}</b> votos
+            </Typography>
+          ))}
+        </Box>
+      )}
+
       {/* Formulario */}
       <Box display="flex" gap={2} mb={4} maxWidth={600} mx="auto">
         <TextField
@@ -192,8 +210,8 @@ const isResults = currentPhase === "RESULTS";
               {/* Edit / Delete */}
               {idea.uid === user?.uid && (
                 <Box position="absolute" top={6} right={6} display="flex">
-                  <Button size="small" onClick={() => startEdit(idea)}  disabled={!canWrite}>✏️</Button>
-                  <Button size="small" color="error" onClick={() => removeIdea(idea.id)}  disabled={!canWrite}>🗑️</Button>
+                  <Button size="small" onClick={() => startEdit(idea)} disabled={!canWrite}>✏️</Button>
+                  <Button size="small" color="error" onClick={() => removeIdea(idea.id)} disabled={!canWrite}>🗑️</Button>
                 </Box>
               )}
 
@@ -256,23 +274,7 @@ const isResults = currentPhase === "RESULTS";
           );
         })}
       </Box>
-      {isResults && ideas.length > 0 && (
-  <Box mb={4} textAlign="center">
-    <Typography variant="h5" mb={2}>
-      🏆 Top Ideas
-    </Typography>
-
-    {ideas.slice(0, 3).map((idea, i) => (
-      <Typography key={idea.id} fontSize={18}>
-        {i === 0 && "🥇"}
-        {i === 1 && "🥈"}
-        {i === 2 && "🥉"}
-        {" "}
-        {idea.text} — <b>{idea.votesCount}</b> votos
-      </Typography>
-    ))}
-  </Box>
-)}
+      
     </Box>
   );
 };
