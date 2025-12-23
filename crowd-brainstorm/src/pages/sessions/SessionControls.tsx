@@ -13,6 +13,8 @@ import {
 import { updateSessionPhase } from "../../services/sessionService";
 import { createNewWorkflow } from "@/services/workflowService";
 import Swal from "sweetalert2";
+import { exportSessionToPDF } from "@/utils/pdfExporter";
+import { getSessionForExport } from "@/services/exportService";
 
 type Phase = "IDEAS" | "VOTING" | "RESULTS";
 
@@ -33,9 +35,6 @@ const canStartIdeas = participantsCount >= 3;
     setOpen(false);
   };
 
-  /* const handleCreateNewDashboard = async () => {
-  await createNewWorkflow(sessionId, "Nuevo Brainstorm");
-}; */
 const handleNewDashboard = async () => {
   const { value: title } = await Swal.fire({
     title: "Nuevo dashboard",
@@ -48,6 +47,23 @@ const handleNewDashboard = async () => {
   if (!title) return;
 
   await createNewWorkflow(sessionId, title);
+};
+
+const handleExportPDF = async () => {
+  try {
+    Swal.fire({
+      title: "Generando PDF...",
+      allowOutsideClick: false,
+      didOpen: () => Swal.showLoading()
+    });
+
+    const data = await getSessionForExport(sessionId);
+    exportSessionToPDF(data);
+
+    Swal.close();
+  } catch (e) {
+    Swal.fire("Error", "No se pudo exportar la sesión", "error");
+  }
 };
 
   return (
@@ -64,7 +80,7 @@ const handleNewDashboard = async () => {
         <Button
           size="small"
           variant="contained"
-          disabled={!canStartIdeas || currentPhase === "IDEAS" || currentPhase === "VOTING" || currentPhase === "RESULTS"}
+          disabled={currentPhase === "IDEAS" || currentPhase === "VOTING" || currentPhase === "RESULTS"}
           onClick={() => setOpen(true)}
         >
           Envío de ideas
@@ -96,6 +112,9 @@ const handleNewDashboard = async () => {
           </Button>
         )}
 
+        {currentPhase === "RESULTS" && (  <Button variant="outlined" onClick={handleExportPDF}>
+          📄 Exportar PDF
+        </Button>)}
       </Stack>
 
       {/* MODAL */}

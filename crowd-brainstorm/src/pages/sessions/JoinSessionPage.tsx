@@ -49,6 +49,7 @@ export const JoinSessionPage = () => {
       Swal.fire('¡Listo!', 'Te uniste a la sesión', 'success');
       navigate(`/session/${session.id}`);
     } catch (err: any) {
+      console.log(err)
       Swal.fire('Error', err.message || 'No pudiste unirte', 'error');
     } finally {
       hideLoading();

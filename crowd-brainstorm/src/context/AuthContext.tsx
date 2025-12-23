@@ -18,7 +18,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<IUser | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+/*   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
         const firestoreUser = await getUserFromFirestore(firebaseUser.uid);
@@ -44,7 +44,35 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     return () => unsub();
   }, []);
+ */
+useEffect(() => {
+  const unsub = onAuthStateChanged(auth, async (firebaseUser) => {
+    if (!firebaseUser) {
+      setUser(null);
+      setLoading(false);
+      return;
+    }
 
+    try {
+      const userData = await getUserFromFirestore(firebaseUser.uid);
+      setUser({
+        uid: firebaseUser.uid,
+        email: firebaseUser.email || '',
+        ...userData
+      });
+    } catch (err) {
+      console.error("Error cargando usuario", err);
+      setUser({
+        uid: firebaseUser.uid,
+        email: firebaseUser.email || ''
+      });
+    } finally {
+      setLoading(false);
+    }
+  });
+
+  return () => unsub();
+}, []);
   return (
     <AuthContext.Provider value={{ user, loading }}>
       {children}
