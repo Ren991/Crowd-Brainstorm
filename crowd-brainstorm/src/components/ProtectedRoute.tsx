@@ -1,15 +1,30 @@
-import { Navigate } from 'react-router-dom';
-import { useAuth } from '@/context/AuthContext';
-import  { type ReactNode } from 'react';
+import { Navigate } from "react-router-dom";
+import { useAuth } from "@/context/AuthContext";
+import { Box, CircularProgress } from "@mui/material";
+import type { JSX } from "react";
 
-export const ProtectedRoute = ({ children }: { children: ReactNode }) => {
-    const { user, loading } = useAuth();
+export const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
+  const { user, loading } = useAuth();
 
-    if (loading) return <p>Cargando...</p>;
+  // 🔄 Esperar a Firebase
+  if (loading) {
+    return (
+      <Box
+        height="100vh"
+        display="flex"
+        alignItems="center"
+        justifyContent="center"
+      >
+        <CircularProgress />
+      </Box>
+    );
+  }
 
-    if (!user) {
-        return <Navigate to="/login" replace />;
-    }
+  // 🔒 No logueado
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
 
-    return children;
+  // ✅ Logueado
+  return children;
 };
